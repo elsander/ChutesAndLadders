@@ -1,0 +1,129 @@
+\documentclass{article}
+
+\begin{document}
+
+\section{Square probabilities}
+Chutes and Ladders runs as a Markov chain, meaning that the probability of landing on
+one square depends only on where you were at the previous step. I am
+using the board configuration in basicboard.png.
+
+I want the probabilities of landing on a square to add to 100 at each
+step, so I need to choose what counts as "landing" on a square. Here I
+make the arbitrary choice that the square you hit before going on a
+chute or ladder is the square you "landed" on. Then if you want to
+calculate the probabilities such that landing is where you end up at
+the end of your turn, you can add the probability of the
+``source'' square to the probability of the ``sink''
+square to get that formulation of the problem.
+
+Then:
+
+$P(1) = P(2) = P(3) = P(4) = P(5) = P(6) = 1/6$ on turn 1, 0 otw
+
+In general:
+
+\begin{equation}
+P(n_t) = \frac{1}{6}\sum_{i=1}^6{p((n-i)_{t-1})}
+\end{equation}
+
+\noindent when there are no chutes or ladders. When there are chutes or ladders,
+the sources and sinks of the chutes/ladders must be included when
+calculating the conditional probabilities. For example, the
+probability of landing on square 18 becomes:
+
+\begin{equation}
+P(18_t) = \frac{1}{6}P(17_{t-1}) + \frac{1}{6}P(16_{t-1}) +
+\frac{1}{6}P(6_{t-1}) + \frac{1}{6}P(15_{t-1}) +
+\frac{1}{6}P(14_{t-1}) + \frac{1}{6}P(4_{t-1}) +
+\frac{1}{6}P(13_{t-1}) + \frac{1}{6}P(12_{t-1})
+\end{equation}
+
+\noindent Thus the probability of landing on squares just past sinks
+increases, and the probability of landing on squares just past sources
+decreases. A plot of the probability of landing on each square over
+120 steps (each line is a square) is in
+ProbabilitiesBySquare.pdf. There is also a version without the
+accumulated probability in square 100 to make it more readable. The
+same data for 100 time steps can be found in
+ProbabilitiesBySquareByStep.txt.
+
+\section{Game Length}
+
+The probability of being at each square at a given time is a
+probability distribution conditional over the time $t$. Then the
+expected game length is an expectation over these conditional
+probability distributions:
+
+\begin{equation}
+E(t) = \sum_{t=1}^{\infty}{tP(100|t)} = 1P(100|t=1) + 2P(100|t=2) + \dots
+\end{equation}
+
+\noindent Each conditional probability is a sum over all combinations
+of squares that could have gotten the player to the finish in
+precisely the given number of steps. Since it is a Markov chain,
+though, it is possible to simply keep the probabilities of all squares
+from the previous time step. Then, in principle, it is possible to
+calculate the probability of winning at every time step; in practice,
+we can approximate the expectation well by calculating it for a very
+large number of time steps. Games are generally not very long, so this
+will not be a significant underestimate of the expectation. Based on
+my code over 100,000 time steps (at which point the probabilities
+are smaller than precision error), the expected game length is
+20.5712. I believe this is incorrect, as simulations show the length
+to be closer to 37.23 turns.
+
+\section{Effect of multiple players}
+
+Players do not interact in chutes and ladders. This means that the
+length of a multi-player game can be thought of as multiple trials of
+a single-player game. Then the length of a 2-player game is equal to
+the minimum of two trials of a single-player game, and the problem is
+to find the expectation of the minimum of two iid random variables.
+
+Considering the probability mass function of this case with two
+players X and Y, we have:
+
+\begin{equation}
+P(X \wedge Y win at t) = P(X lose|t)P(Y win|t) + P(X win|t)P(Y lose|t) + P(X win|t)P(Y win|t)
+\end{equation}
+
+\begin{equation}
+= 2P(100|t)(1-P(100|t))+P(100|t)^2
+\end{equation}
+
+\noindent where $P(100|t)$ is the probability of landing on square 100
+on turn $t$. Then the expectation is:
+
+\begin{equation}
+E(t) = \sum_{t=1}^{\infty}{t(2P(100|t)(1-P(100|t))+P(100|t)^2)}
+\end{equation}
+
+\noindent Note that the pmf is related to the binomial
+distribution. This fact can be used to extend this problem to $m$
+players:
+
+\begin{equation}
+P(at least 1 win at t) = \sum_{i=1}^{m}{(m choose i)P(100|t)^i(1-P(100|t))^{m-i}}
+\end{equation}
+
+\begin{equation}
+= 1 - (1-P(100|t))^m
+\end{equation}
+
+\noindent which can be used to calculate the expectation as
+usual. Using these equations, I calculate the expected game length to
+be 40.996 for 2 players and 61.277 for 3, but the lengths are longer,
+not shorter, so there is something wrong with my code, and I was not
+able to find it in time. I believe the problem is with the code and
+not the math behind it.
+
+I don't have time to fix the code, but I ran simulations in the
+background to compare against my analytical results. For these data, I
+have the expected game length to be approximately 37.23 turns for one
+player (based on N=1,000,000), 25.14 for two players (based on
+N=100,000), and 20.91 for three (based on N=100,000).
+
+\begin{equation}
+\end{equation}
+
+\end{document}
